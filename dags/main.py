@@ -51,6 +51,7 @@ def transform(extracted_data):
         })
     return transformed_data
 
+
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import pandas as pd
@@ -60,12 +61,13 @@ import os
 def load(transformed_data):
     # Convert data to DataFrame
     df = pd.DataFrame(transformed_data)
-    filename = 'extracted_data.csv'
+    filename = '../extracted_data.csv'
     df.to_csv(filename, index=False)
+
 
 def version_control():
     import os
-    filename = 'extracted_data.csv'  # The filename created in the load function
+    filename = '../extracted_data.csv'  # The filename created in the load function
     # Track the file with DVC
     os.system('dvc add ' + filename)
     # Commit changes to Git (ensure you have a git repository initialized)
@@ -75,6 +77,7 @@ def version_control():
     os.system('dvc push')
     # Optionally, push git changes
     os.system('git push')
+
 
 """
 for source in sources:
@@ -87,30 +90,39 @@ default_args = {
     'owner': 'airflow-demo'
 }
 
+from datetime import timedelta
 
-# dag = DAG(
-#     'mlops-dag',
-#     default_args=default_args,
-#     description='A simple '
-# )
-#
-#
-# task1 = PythonOperator(
-#     task_id = "Task_1",
-#     python_callable = extract,
-#     dag = dag
-# )
-#
-# task2 = PythonOperator(
-#     task_id = "Task_2",
-#     python_callable = transform,
-#     dag=dag
-# )
-#
-# task3 = PythonOperator(
-#     task_id = "Task_3",
-#     python_callable = load,
-#     dag=dag
-# )
-#
-# task1 >> task2 >> task3
+dag = DAG(
+    'mlops-dag-assignment',
+    default_args=default_args,
+    description='A simple Dag'
+)
+
+task1 = PythonOperator(
+    task_id="extract_task",
+    python_callable=extract,
+    dag=dag,
+    execution_timeout=timedelta(minutes=1),
+)
+
+task2 = PythonOperator(
+    task_id="transform_task",
+    python_callable=transform,
+    op_kwargs={'extracted_data': "{{ ti.xcom_pull(task_ids='extract_task') }}"},
+    dag=dag,
+)
+
+task3 = PythonOperator(
+    task_id="load_task",
+    python_callable=load,
+    op_kwargs={'transformed_data': "{{ ti.xcom_pull(task_ids='transform_task') }}"},
+    dag=dag,
+)
+
+task4 = PythonOperator(
+    task_id="version_control_task",
+    python_callable=version_control,
+    dag=dag,
+)
+
+task1 >> task2 >> task3 >> task4
