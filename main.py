@@ -7,11 +7,25 @@ from datetime import datetime
 sources = ['https://www.dawn.com/', 'https://www.bbc.com/']
 
 def extract():
-    reqs = requests.get(sources[0])
-    soup = BeautifulSoup(reqs.text, 'html.parser')
-    urls = []
-    for link in soup.find_all('a'):
-        print(link.get('href'))
+    all_data = []
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+    for source in sources:
+        reqs = requests.get(source, headers=headers)
+        soup = BeautifulSoup(reqs.text, 'html.parser')
+        # Example for Dawn.com; you need to adjust selectors based on actual site structure
+        articles = soup.find_all('article')
+        for article in articles:
+            title = article.find('h2')
+            description = article.find('p')
+            url = article.find('a', href=True)
+            if title and description and url:
+                all_data.append({
+                    'url': url['href'],
+                    'title': title.get_text(strip=True),
+                    'description': description.get_text(strip=True)
+                })
+    return all_data
+
 
 def transform():
     print("Transformation")
