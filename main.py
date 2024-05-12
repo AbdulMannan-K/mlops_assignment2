@@ -63,6 +63,19 @@ def load(transformed_data):
     filename = 'extracted_data.csv'
     df.to_csv(filename, index=False)
 
+def version_control():
+    import os
+    filename = 'extracted_data.csv'  # The filename created in the load function
+    # Track the file with DVC
+    os.system('dvc add ' + filename)
+    # Commit changes to Git (ensure you have a git repository initialized)
+    os.system('git add ' + filename + '.dvc')
+    os.system('git commit -m "Update data version"')
+    # Push changes to the DVC remote storage
+    os.system('dvc push')
+    # Optionally, push git changes
+    os.system('git push')
+
 """
 for source in sources:
     extract(source)
@@ -74,11 +87,6 @@ default_args = {
     'owner': 'airflow-demo'
 }
 
-data = extract()
-
-data = transform(data)
-
-load(data)
 
 # dag = DAG(
 #     'mlops-dag',
